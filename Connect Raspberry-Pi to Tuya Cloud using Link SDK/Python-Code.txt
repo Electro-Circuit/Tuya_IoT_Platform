@@ -1,0 +1,61 @@
+##########-Sensor-############
+from smbus2 import SMBus
+from mlx90614 import MLX90614
+bus = SMBus(1)
+sensor = MLX90614(bus, address=0x5A)
+#############-LEDs-#############
+import RPi.GPIO as GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+led1= 19
+GPIO.setup(led1,GPIO.OUT)
+led2= 26
+GPIO.setup(led2,GPIO.OUT)
+p = GPIO.PWM(led2,100)         
+p.start(0)   
+y=0
+x=0
+#############-Tuya_SDK-###############
+import time
+import coloredlogs
+from tuyalinksdk.client import TuyaClient
+from tuyalinksdk.console_qrcode import qrcode_generate
+coloredlogs.install(level='DEBUG')
+client = TuyaClient(productid='cb0euh3fjcdneis0',
+                    uuid='tuya82f1b3a2cbe146bc',
+                    authkey='VH3e7MxaUlf42zPCwiy3VI2yqJmgBynq')
+
+def on_connected():
+    print('Connected.')
+
+def on_qrcode(url):
+    qrcode_generate(url)
+
+def on_reset(data):
+    print('Reset:', data)
+
+def on_dps(dps):
+    print('DataPoints:', dps)
+    ##############-For_LED1-################
+    if(dps=={'101': True}):
+        GPIO.output(led1,GPIO.HIGH)
+    elif(dps=={'101': False}):
+        GPIO.output(led1,GPIO.LOW)
+    ##############-For_LED2-###############
+    elif(dps['102']>=0):
+        y=dps['102']
+        p.ChangeDutyCycle(y) 
+    #############-Sensor_Data-#############
+    dps['103']=x       
+               
+    client.push_dps(dps)
+client.on_connected = on_connected
+client.on_qrcode = on_qrcode
+client.on_reset = on_reset
+client.on_dps = on_dps
+client.connect()
+client.loop_start()
+while True:  
+    x=int(sensor.get_object_1())   
+    time.sleep(0.5) #0.5sec
+

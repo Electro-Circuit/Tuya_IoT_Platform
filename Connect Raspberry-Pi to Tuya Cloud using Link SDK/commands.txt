@@ -1,0 +1,7 @@
+git clone https://github.com/tuya/tuyaos-link-sdk-python.git
+
+
+python3 -m pip install ./tuyaos-link-sdk-python
+
+
+python3 ./outlet.py
